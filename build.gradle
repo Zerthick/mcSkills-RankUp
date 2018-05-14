@@ -1,0 +1,25 @@
+plugins {
+    id 'org.spongepowered.plugin' version '0.8.1'
+    id 'java'
+    id 'com.qixalite.spongestart2' version '3.1.0'
+}
+
+group 'io.github.zerthick'
+version '0.0.1'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'sponge'
+        url = 'http://repo.spongepowered.org/maven'
+    }
+}
+
+spongestart{
+    minecraft '1.12.2'
+}
+
+dependencies {
+    compile 'org.spongepowered:spongeapi:7.0.0'
+    compile 'io.github.zerthick:mcskills:0.0.1:api'
+}
