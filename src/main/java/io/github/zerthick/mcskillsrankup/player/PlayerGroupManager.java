@@ -19,16 +19,16 @@
 
 package io.github.zerthick.mcskillsrankup.player;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerGroupManager {
 
     private Map<UUID, Map<String, String>> playerGroups;
 
     public PlayerGroupManager() {
-        playerGroups = new HashMap<>();
+        playerGroups = new ConcurrentHashMap<>();
     }
 
     public Map<String, String> getPlayerGroups(UUID playerUUID) {
