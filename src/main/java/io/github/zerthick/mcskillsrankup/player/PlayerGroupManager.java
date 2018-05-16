@@ -23,4 +23,8 @@ public class PlayerGroupManager {
     public Map<String, String> removePlayerGroups(UUID playerUUID) {
         return playerGroups.remove(playerUUID);
     }
+
+    public Map<UUID, Map<String, String>> getAllPlayerGroups() {
+        return playerGroups;
+    }
 }

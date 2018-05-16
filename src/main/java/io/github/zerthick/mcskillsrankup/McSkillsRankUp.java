@@ -8,7 +8,8 @@ import io.github.zerthick.mcskills.api.event.experience.McSkillsEventContextKeys
 import io.github.zerthick.mcskillsrankup.ladder.RankUpGroup;
 import io.github.zerthick.mcskillsrankup.ladder.RankUpLadder;
 import io.github.zerthick.mcskillsrankup.player.PlayerGroupManager;
-import io.github.zerthick.mcskillsrankup.util.config.RankUpGroupSerializer;
+import io.github.zerthick.mcskillsrankup.utils.config.RankUpGroupSerializer;
+import io.github.zerthick.mcskillsrankup.utils.database.Database;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
@@ -21,15 +22,21 @@ import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.cause.EventContext;
+import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
+import org.spongepowered.api.event.game.state.GameStoppedServerEvent;
+import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.plugin.Dependency;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
+import org.spongepowered.api.scheduler.Task;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Plugin(
         id = "mcskillsrankup",
@@ -59,7 +66,24 @@ public class McSkillsRankUp {
     private PluginContainer instance;
 
     private Set<RankUpLadder> ladders;
+    private Database db;
     private PlayerGroupManager playerGroupManager;
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public Path getDefaultConfig() {
+        return defaultConfig;
+    }
+
+    public Path getDefaultConfigDir() {
+        return defaultConfigDir;
+    }
+
+    public PluginContainer getInstance() {
+        return instance;
+    }
 
     @Listener
     public void onGameInit(GameInitializationEvent event) {
@@ -90,10 +114,22 @@ public class McSkillsRankUp {
             logger.warn("Error loading config! Error: " + e.getMessage());
         }
 
+        try {
+            db = new Database(this);
+        } catch (SQLException e) {
+            logger.error("Error connecting to database! Error: " + e.getMessage());
+        }
+
         playerGroupManager = new PlayerGroupManager();
 
-        configLoader = HoconConfigurationLoader.builder().setPath(defaultConfig.resolve("playerdata.conf")).build();
-
+        // Save all accounts to the DB asynchronously every 5 mins
+        Task.builder()
+                .async()
+                .interval(5, TimeUnit.MINUTES)
+                .name("McSkillsRankUp Player Data Save Task")
+                .execute(() -> playerGroupManager.getAllPlayerGroups()
+                        .forEach((player, ladders) -> db.savePlayerData(player, ladders)))
+                .submit(this);
     }
 
 
@@ -151,5 +187,34 @@ public class McSkillsRankUp {
             }
 
         }));
+    }
+
+    @Listener
+    public void onPlayerJoin(ClientConnectionEvent.Join event, @Getter("getTargetEntity") Player player) {
+
+        // Load player data into the cache if it exists, else created a blank entry
+        UUID playerUUID = player.getUniqueId();
+        Optional<Map<String, String>> playerGroupsOptional = db.getPlayerData(playerUUID);
+        if (playerGroupsOptional.isPresent()) {
+            playerGroupManager.addPlayerGroups(playerUUID, playerGroupsOptional.get());
+        } else {
+            playerGroupManager.addPlayerGroups(playerUUID, new HashMap<>());
+        }
+    }
+
+    @Listener
+    public void onPlayerLeave(ClientConnectionEvent.Disconnect event, @Getter("getTargetEntity") Player player) {
+
+        // Remove player account from the cache and save it to the DB
+        UUID playerUUID = player.getUniqueId();
+        db.savePlayerData(playerUUID, playerGroupManager.removePlayerGroups(playerUUID));
+    }
+
+    @Listener
+    public void onServerStop(GameStoppedServerEvent event) {
+
+        // Save any remaining player data
+        playerGroupManager.getAllPlayerGroups()
+                .forEach((player, ladders) -> db.savePlayerData(player, ladders));
     }
 }

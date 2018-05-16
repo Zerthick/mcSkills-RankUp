@@ -1,4 +1,4 @@
-package io.github.zerthick.mcskillsrankup.util.config;
+package io.github.zerthick.mcskillsrankup.utils.config;
 
 import com.google.common.reflect.TypeToken;
 import io.github.zerthick.mcskillsrankup.ladder.RankUpGroup;
