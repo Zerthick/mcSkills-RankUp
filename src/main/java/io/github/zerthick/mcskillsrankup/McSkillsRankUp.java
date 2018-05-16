@@ -146,7 +146,7 @@ public class McSkillsRankUp {
                 .async()
                 .interval(5, TimeUnit.MINUTES)
                 .name("McSkillsRankUp Player Data Save Task")
-                .execute(() -> playerGroupManager.getAllPlayerGroups()
+                .execute(() -> new HashMap<>(playerGroupManager.getAllPlayerGroups())
                         .forEach((player, ladders) -> db.savePlayerData(player, ladders)))
                 .submit(this);
     }
