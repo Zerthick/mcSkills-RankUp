@@ -53,7 +53,6 @@ import org.spongepowered.api.scheduler.Task;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -133,11 +132,7 @@ public class McSkillsRankUp {
             logger.warn("Error loading config! Error: " + e.getMessage());
         }
 
-        try {
-            db = new Database(this);
-        } catch (SQLException e) {
-            logger.error("Error connecting to database! Error: " + e.getMessage());
-        }
+        db = new Database(this);
 
         playerGroupManager = new PlayerGroupManager();
 
