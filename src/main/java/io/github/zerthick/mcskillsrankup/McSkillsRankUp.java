@@ -42,6 +42,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.cause.EventContext;
 import org.spongepowered.api.event.filter.Getter;
+import org.spongepowered.api.event.game.GameReloadEvent;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppedServerEvent;
@@ -120,21 +121,11 @@ public class McSkillsRankUp {
             }
         }
 
-        ladders = new HashSet<>();
-
-        try {
-            CommentedConfigurationNode ladderNode = configLoader.load().getNode("ladders");
-            for (CommentedConfigurationNode node : ladderNode.getChildrenMap().values()) {
-                List<RankUpGroup> groups = node.getList(TypeToken.of(RankUpGroup.class));
-                ladders.add(new RankUpLadder(node.getKey().toString(), groups));
-            }
-        } catch (ObjectMappingException | IOException e) {
-            logger.warn("Error loading config! Error: " + e.getMessage());
-        }
-
         db = new Database(this);
 
         playerGroupManager = new PlayerGroupManager();
+
+        ladders = loadLadders(configLoader);
 
         // Save all accounts to the DB asynchronously every 5 mins
         Task.builder()
@@ -146,6 +137,11 @@ public class McSkillsRankUp {
                 .submit(this);
     }
 
+    @Listener
+    public void onGameReload(GameReloadEvent event) {
+        ConfigurationLoader<CommentedConfigurationNode> configLoader = HoconConfigurationLoader.builder().setPath(defaultConfig).build();
+        ladders = loadLadders(configLoader);
+    }
 
     @Listener
     public void onServerStart(GameStartedServerEvent event) {
@@ -230,5 +226,22 @@ public class McSkillsRankUp {
         // Save any remaining player data
         playerGroupManager.getAllPlayerGroups()
                 .forEach((player, ladders) -> db.savePlayerData(player, ladders));
+    }
+
+    private Set<RankUpLadder> loadLadders(ConfigurationLoader<CommentedConfigurationNode> configLoader) {
+
+        Set<RankUpLadder> ladders = new HashSet<>();
+
+        try {
+            CommentedConfigurationNode ladderNode = configLoader.load().getNode("ladders");
+            for (CommentedConfigurationNode node : ladderNode.getChildrenMap().values()) {
+                List<RankUpGroup> groups = node.getList(TypeToken.of(RankUpGroup.class));
+                ladders.add(new RankUpLadder(node.getKey().toString(), groups));
+            }
+        } catch (ObjectMappingException | IOException e) {
+            logger.warn("Error loading config! Error: " + e.getMessage());
+        }
+
+        return ladders;
     }
 }
