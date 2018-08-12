@@ -37,7 +37,7 @@ public class Database {
     private String databaseUrl;
     private Logger logger;
 
-    public Database(McSkillsRankUp plugin) throws SQLException {
+    public Database(McSkillsRankUp plugin) {
         logger = plugin.getLogger();
         String configDir = plugin.getDefaultConfigDir().toString();
         databaseUrl = "jdbc:h2:" + configDir + "/playerdata;mode=MySQL";
@@ -52,7 +52,7 @@ public class Database {
         return sql.getDataSource(databaseUrl);
     }
 
-    private void createDatabaseTables() throws SQLException {
+    private void createDatabaseTables() {
         String sqlCreateTable = "CREATE TABLE IF NOT EXISTS" +
                 "  `playerData` (" +
                 "  `playerUUID` VARCHAR(36) NOT NULL," +
@@ -60,10 +60,15 @@ public class Database {
                 "  `groupID` VARCHAR(20) NOT NULL," +
                 "  PRIMARY KEY (`playerUUID`, `ladderID`));";
 
-        Connection conn = getDataSource().getConnection();
-        Statement createStatement = conn.createStatement();
-        createStatement.execute(sqlCreateTable);
-        logger.info("Database Connection Established!");
+        try (
+                Connection conn = getDataSource().getConnection()
+        ) {
+            Statement createStatement = conn.createStatement();
+            createStatement.execute(sqlCreateTable);
+            logger.info("Database Connection Established!");
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     public Optional<Map<String, String>> getPlayerData(UUID playerUUID) {
