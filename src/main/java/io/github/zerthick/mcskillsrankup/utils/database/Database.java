@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018  Zerthick
+ * Copyright (C) 2019  Zerthick
  *
  * This file is part of mcSkills-RankUp.
  *
@@ -56,8 +56,8 @@ public class Database {
         String sqlCreateTable = "CREATE TABLE IF NOT EXISTS" +
                 "  `playerData` (" +
                 "  `playerUUID` VARCHAR(36) NOT NULL," +
-                "  `ladderID` VARCHAR(20) NOT NULL," +
-                "  `groupID` VARCHAR(20) NOT NULL," +
+                "  `ladderID` VARCHAR(255) NOT NULL," +
+                "  `groupID` VARCHAR(255) NOT NULL," +
                 "  PRIMARY KEY (`playerUUID`, `ladderID`));";
 
         try (

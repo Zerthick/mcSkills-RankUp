@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018  Zerthick
+ * Copyright (C) 2019  Zerthick
  *
  * This file is part of mcSkills-RankUp.
  *
@@ -24,7 +24,7 @@ plugins {
 }
 
 group 'io.github.zerthick'
-version '0.0.1'
+version '0.0.2'
 
 repositories {
     mavenCentral()
